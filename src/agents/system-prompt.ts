@@ -7,6 +7,7 @@ import type { ResolvedTimeFormat } from "./date-time.js";
 import type { EmbeddedContextFile } from "./pi-embedded-helpers.js";
 import type { EmbeddedSandboxInfo } from "./pi-embedded-runner/types.js";
 import { sanitizeForPromptLiteral } from "./sanitize-for-prompt.js";
+import { log } from "./pi-embedded-runner/logger.js";
 
 /**
  * Controls which hardcoded sections are included in the system prompt.
@@ -14,7 +15,7 @@ import { sanitizeForPromptLiteral } from "./sanitize-for-prompt.js";
  * - "minimal": Reduced sections (Tooling, Workspace, Runtime) - used for subagents
  * - "none": Just basic identity line, no sections
  */
-export type PromptMode = "full" | "minimal" | "none";
+export type PromptMode = "full" | "minimal" | "none" | "direct";
 type OwnerIdDisplay = "raw" | "hash";
 
 function buildSkillsSection(params: { skillsPrompt?: string; readToolName: string }) {
@@ -233,6 +234,17 @@ export function buildAgentSystemPrompt(params: {
   };
   memoryCitationsMode?: MemoryCitationsMode;
 }) {
+  if (params.promptMode === "direct") {
+    // direct read AGENTS.md and return the contents, do not include any other sections
+    for (const file of params.contextFiles ?? []) {
+      if (file.path.includes("AGENTS.md")) {
+        log.info(`## AGENTS.md found in context files, direct mode`);
+        return file.content.trim();
+      }
+    }
+    log.error(`## AGENTS.md not found in context files`);
+    throw new Error("AGENTS.md not found in context files");
+  }
   const acpEnabled = params.acpEnabled !== false;
   const coreToolSummaries: Record<string, string> = {
     read: "Read file contents",

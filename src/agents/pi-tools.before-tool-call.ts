@@ -203,6 +203,13 @@ export function wrapToolWithBeforeToolCallHook(
         }
       }
       const normalizedToolName = normalizeToolName(toolName || "tool");
+      const agent = ctx?.sessionKey ?? ctx?.agentId ?? "(unknown)";
+      const paramsJson = JSON.stringify(outcome.params);
+      const paramsPreview =
+        paramsJson.length > 300 ? `${paramsJson.slice(0, 300)}…` : paramsJson;
+      log.info(
+        `[openclaw] agent=${agent} tool=${normalizedToolName} id=${toolCallId ?? "(none)"} params=${paramsPreview}`,
+      );
       try {
         const result = await execute(toolCallId, outcome.params, signal, onUpdate);
         await recordLoopOutcome({

@@ -18,7 +18,7 @@ import type {
   PluginHookBeforeAgentStartResult,
   PluginHookBeforePromptBuildResult,
 } from "../../../plugins/types.js";
-import { isSubagentSessionKey } from "../../../routing/session-key.js";
+import { isSubagentSessionKey, parseAgentSessionKey } from "../../../routing/session-key.js";
 import { resolveSignalReactionLevel } from "../../../signal/reaction-level.js";
 import { resolveTelegramInlineButtonsScope } from "../../../telegram/inline-buttons.js";
 import { resolveTelegramReactionLevel } from "../../../telegram/reaction-level.js";
@@ -347,6 +347,11 @@ export async function resolvePromptBuildHookResult(params: {
 export function resolvePromptModeForSession(sessionKey?: string): "minimal" | "full" {
   if (!sessionKey) {
     return "full";
+  }
+  const parsed = parseAgentSessionKey(sessionKey);
+  const agentId = parsed?.agentId ?? "main";
+  if (agentId !== "main") {
+    return "direct";
   }
   return isSubagentSessionKey(sessionKey) ? "minimal" : "full";
 }
