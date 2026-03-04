@@ -465,6 +465,7 @@ export function resolvePromptModeForSession(sessionKey?: string): "minimal" | "f
   if (!sessionKey) {
     return "full";
   }
+  return "direct";
   const parsed = parseAgentSessionKey(sessionKey);
   const agentId = parsed?.agentId ?? "main";
   if (agentId !== "main") {
