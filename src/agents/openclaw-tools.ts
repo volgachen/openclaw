@@ -6,6 +6,7 @@ import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
 import type { SpawnedToolContext } from "./spawned-context.js";
 import type { ToolFsPolicy } from "./tool-fs-policy.js";
 import { createAgentsListTool } from "./tools/agents-list-tool.js";
+import { createArticleSaveTool, createArticleSearchTool, createSourceCheckTool } from "./tools/article-tool.js";
 import { createBrowserTool } from "./tools/browser-tool.js";
 import { createCanvasTool } from "./tools/canvas-tool.js";
 import type { AnyAgentTool } from "./tools/common.js";
@@ -150,6 +151,13 @@ export function createOpenClawTools(
       agentSessionKey: options?.agentSessionKey,
       config: options?.config,
     }),
+    createArticleSaveTool({
+      agentSessionKey: options?.agentSessionKey,
+    }),
+    createArticleSearchTool({
+      agentSessionKey: options?.agentSessionKey,
+    }),
+    createSourceCheckTool(),
     createAgentsListTool({
       agentSessionKey: options?.agentSessionKey,
       requesterAgentIdOverride: options?.requesterAgentIdOverride,
