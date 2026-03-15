@@ -47,7 +47,7 @@ async function run() {
       `
       CREATE TABLE IF NOT EXISTS ${schema}.articles (
         id                  BIGSERIAL PRIMARY KEY,
-        source_id           TEXT,
+        source_id           BIGINT REFERENCES ${schema}.sources (id) ON DELETE SET NULL,
         article_name        TEXT,
         url                 TEXT,
         memory_file         TEXT,

@@ -36,6 +36,8 @@ const SessionsSpawnToolSchema = Type.Object({
   cleanup: optionalStringEnum(["delete", "keep"] as const),
   sandbox: optionalStringEnum(SESSIONS_SPAWN_SANDBOX_MODES),
   streamTo: optionalStringEnum(ACP_SPAWN_STREAM_TARGETS),
+  /** When false, the run is not registered for auto-announce on completion. Default true. */
+  need_register: Type.Optional(Type.Boolean()),
 
   // Inline attachments (snapshot-by-value).
   // NOTE: Attachment contents are redacted from transcript persistence by sanitizeToolCallInputs.
@@ -171,6 +173,7 @@ export function createSessionsSpawnTool(
           cleanup,
           sandbox,
           expectsCompletionMessage: true,
+          need_register: params.need_register === false ? false : true,
           attachments,
           attachMountPath:
             params.attachAs && typeof params.attachAs === "object"

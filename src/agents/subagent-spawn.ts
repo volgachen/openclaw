@@ -35,6 +35,7 @@ import {
   resolveInternalSessionKey,
   resolveMainSessionAlias,
 } from "./tools/sessions-helpers.js";
+import { logInfo } from "../logger.js";
 
 export const SUBAGENT_SPAWN_MODES = ["run", "session"] as const;
 export type SpawnSubagentMode = (typeof SUBAGENT_SPAWN_MODES)[number];
@@ -55,6 +56,8 @@ export type SpawnSubagentParams = {
   cleanup?: "delete" | "keep";
   sandbox?: SpawnSubagentSandboxMode;
   expectsCompletionMessage?: boolean;
+  /** When false, the run is not registered for auto-announce on completion. Default true. */
+  need_register?: boolean;
   attachments?: Array<{
     name: string;
     content: string;
@@ -636,6 +639,27 @@ export async function spawnSubagentDirect(
       error: messageText,
       childSessionKey,
       runId: childRunId,
+    };
+  }
+
+  logInfo(`subagent spawn: ${childSessionKey}`)
+  if (params.need_register === false) {
+    logInfo(`subagent spawn: need_register=false, childSessionKey=${childSessionKey}, runId=${childRunId}`);
+    const isCronSession = isCronSessionKey(ctx.agentSessionKey);
+    const note =
+      spawnMode === "session"
+        ? SUBAGENT_SPAWN_SESSION_ACCEPTED_NOTE
+        : isCronSession
+          ? undefined
+          : SUBAGENT_SPAWN_ACCEPTED_NOTE;
+    return {
+      status: "accepted",
+      childSessionKey,
+      runId: childRunId,
+      mode: spawnMode,
+      note,
+      modelApplied: resolvedModel ? modelApplied : undefined,
+      attachments: attachmentsReceipt,
     };
   }
 
