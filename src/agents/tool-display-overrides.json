@@ -29,7 +29,7 @@
     "sessions_send": {
       "emoji": "📨",
       "title": "Session Send",
-      "detailKeys": ["label", "sessionKey", "agentId", "timeoutSeconds"]
+      "detailKeys": ["label", "sessionKey", "agentId"]
     },
     "sessions_history": {
       "emoji": "🧾",

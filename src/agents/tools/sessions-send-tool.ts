@@ -14,22 +14,18 @@ import { jsonResult, readStringParam } from "./common.js";
 import {
   createSessionVisibilityGuard,
   createAgentToAgentPolicy,
-  extractAssistantText,
   resolveEffectiveSessionToolsVisibility,
   resolveSessionReference,
   resolveSandboxedSessionToolContext,
   resolveVisibleSessionReference,
-  stripToolMessages,
 } from "./sessions-helpers.js";
-import { buildAgentToAgentMessageContext, resolvePingPongTurns } from "./sessions-send-helpers.js";
-import { runSessionsSendA2AFlow } from "./sessions-send-tool.a2a.js";
+import { buildAgentToAgentMessageContext } from "./sessions-send-helpers.js";
 
 const SessionsSendToolSchema = Type.Object({
   sessionKey: Type.Optional(Type.String()),
   label: Type.Optional(Type.String({ minLength: 1, maxLength: SESSION_LABEL_MAX_LENGTH })),
   agentId: Type.Optional(Type.String({ minLength: 1, maxLength: 64 })),
   message: Type.String(),
-  timeoutSeconds: Type.Optional(Type.Number({ minimum: 0 })),
 });
 
 export function createSessionsSendTool(opts?: {
@@ -188,12 +184,6 @@ export function createSessionsSendTool(opts?: {
       // Normalize sessionKey/sessionId input into a canonical session key.
       const resolvedKey = visibleSession.key;
       const displayKey = visibleSession.displayKey;
-      const timeoutSeconds =
-        typeof params.timeoutSeconds === "number" && Number.isFinite(params.timeoutSeconds)
-          ? Math.max(0, Math.floor(params.timeoutSeconds))
-          : 30;
-      const timeoutMs = timeoutSeconds * 1000;
-      const announceTimeoutMs = timeoutSeconds === 0 ? 30_000 : timeoutMs;
       const idempotencyKey = crypto.randomUUID();
       let runId: string = idempotencyKey;
       const visibilityGuard = await createSessionVisibilityGuard({
@@ -232,52 +222,6 @@ export function createSessionsSendTool(opts?: {
           sourceTool: "sessions_send",
         },
       };
-      const requesterSessionKey = opts?.agentSessionKey;
-      const requesterChannel = opts?.agentChannel;
-      const maxPingPongTurns = resolvePingPongTurns(cfg);
-      const delivery = { status: "pending", mode: "announce" as const };
-      const startA2AFlow = (roundOneReply?: string, waitRunId?: string) => {
-        void runSessionsSendA2AFlow({
-          targetSessionKey: resolvedKey,
-          displayKey,
-          message,
-          announceTimeoutMs,
-          maxPingPongTurns,
-          requesterSessionKey,
-          requesterChannel,
-          roundOneReply,
-          waitRunId,
-        });
-      };
-
-      if (timeoutSeconds === 0) {
-        try {
-          const response = await callGateway<{ runId: string }>({
-            method: "agent",
-            params: sendParams,
-            timeoutMs: 10_000,
-          });
-          if (typeof response?.runId === "string" && response.runId) {
-            runId = response.runId;
-          }
-          startA2AFlow(undefined, runId);
-          return jsonResult({
-            runId,
-            status: "accepted",
-            sessionKey: displayKey,
-            delivery,
-          });
-        } catch (err) {
-          const messageText =
-            err instanceof Error ? err.message : typeof err === "string" ? err : "error";
-          return jsonResult({
-            runId,
-            status: "error",
-            error: messageText,
-            sessionKey: displayKey,
-          });
-        }
-      }
 
       try {
         const response = await callGateway<{ runId: string }>({
@@ -288,6 +232,11 @@ export function createSessionsSendTool(opts?: {
         if (typeof response?.runId === "string" && response.runId) {
           runId = response.runId;
         }
+        return jsonResult({
+          runId,
+          status: "accepted",
+          sessionKey: displayKey,
+        });
       } catch (err) {
         const messageText =
           err instanceof Error ? err.message : typeof err === "string" ? err : "error";
@@ -298,64 +247,6 @@ export function createSessionsSendTool(opts?: {
           sessionKey: displayKey,
         });
       }
-
-      let waitStatus: string | undefined;
-      let waitError: string | undefined;
-      try {
-        const wait = await callGateway<{ status?: string; error?: string }>({
-          method: "agent.wait",
-          params: {
-            runId,
-            timeoutMs,
-          },
-          timeoutMs: timeoutMs + 2000,
-        });
-        waitStatus = typeof wait?.status === "string" ? wait.status : undefined;
-        waitError = typeof wait?.error === "string" ? wait.error : undefined;
-      } catch (err) {
-        const messageText =
-          err instanceof Error ? err.message : typeof err === "string" ? err : "error";
-        return jsonResult({
-          runId,
-          status: messageText.includes("gateway timeout") ? "timeout" : "error",
-          error: messageText,
-          sessionKey: displayKey,
-        });
-      }
-
-      if (waitStatus === "timeout") {
-        return jsonResult({
-          runId,
-          status: "timeout",
-          error: waitError,
-          sessionKey: displayKey,
-        });
-      }
-      if (waitStatus === "error") {
-        return jsonResult({
-          runId,
-          status: "error",
-          error: waitError ?? "agent error",
-          sessionKey: displayKey,
-        });
-      }
-
-      const history = await callGateway<{ messages: Array<unknown> }>({
-        method: "chat.history",
-        params: { sessionKey: resolvedKey, limit: 50 },
-      });
-      const filtered = stripToolMessages(Array.isArray(history?.messages) ? history.messages : []);
-      const last = filtered.length > 0 ? filtered[filtered.length - 1] : undefined;
-      const reply = last ? extractAssistantText(last) : undefined;
-      startA2AFlow(reply ?? undefined);
-
-      return jsonResult({
-        runId,
-        status: "ok",
-        reply,
-        sessionKey: displayKey,
-        delivery,
-      });
     },
   };
 }

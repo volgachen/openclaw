@@ -104,7 +104,7 @@ afterAll(async () => {
 });
 
 describe("sessions_send gateway loopback", () => {
-  it("returns reply when lifecycle ends before agent.wait", async () => {
+  it("sends message and returns accepted", async () => {
     const spy = agentCommand as unknown as Mock<(opts: unknown) => Promise<void>>;
     spy.mockImplementation(async (opts: unknown) =>
       emitLifecycleAssistantReply({
@@ -128,15 +128,12 @@ describe("sessions_send gateway loopback", () => {
     const result = await tool.execute("call-loopback", {
       sessionKey: "main",
       message: "ping",
-      timeoutSeconds: 5,
     });
     const details = result.details as {
       status?: string;
-      reply?: string;
       sessionKey?: string;
     };
-    expect(details.status).toBe("ok");
-    expect(details.reply).toBe("pong");
+    expect(details.status).toBe("accepted");
     expect(details.sessionKey).toBe("main");
 
     const firstCall = spy.mock.calls[0]?.[0] as
@@ -190,15 +187,12 @@ describe("sessions_send label lookup", () => {
       const result = await tool.execute("call-by-label", {
         label: "my-test-worker",
         message: "hello labeled session",
-        timeoutSeconds: 5,
       });
       const details = result.details as {
         status?: string;
-        reply?: string;
         sessionKey?: string;
       };
-      expect(details.status).toBe("ok");
-      expect(details.reply).toBe("labeled response");
+      expect(details.status).toBe("accepted");
       expect(details.sessionKey).toBe("agent:main:test-labeled-session");
     },
   );
