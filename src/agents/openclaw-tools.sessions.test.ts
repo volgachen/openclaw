@@ -544,7 +544,7 @@ describe("sessions tools", () => {
     const agentCalls = calls.filter((call) => call.method === "agent");
     expect(agentCalls).toHaveLength(1);
     expect(agentCalls[0]?.params).toMatchObject({
-      message: "ping",
+      message: "[From session: discord:group:req]\nping",
       lane: "nested",
       channel: "webchat",
       inputProvenance: { kind: "inter_session" },

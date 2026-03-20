@@ -207,8 +207,9 @@ export function createSessionsSendTool(opts?: {
         requesterChannel: opts?.agentChannel,
         targetSessionKey: displayKey,
       });
+      const messageWithSource = `[From session: ${opts?.agentSessionKey ?? "unknown"}]\n${message}`;
       const sendParams = {
-        message,
+        message: messageWithSource,
         sessionKey: resolvedKey,
         idempotencyKey,
         deliver: false,
