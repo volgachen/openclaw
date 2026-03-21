@@ -2,7 +2,7 @@ import { codingTools, createReadTool, readTool } from "@mariozechner/pi-coding-a
 import type { OpenClawConfig } from "../config/config.js";
 import type { ToolLoopDetectionConfig } from "../config/types.tools.js";
 import { resolveMergedSafeBinProfileFixtures } from "../infra/exec-safe-bin-runtime-policy.js";
-import { logWarn } from "../logger.js";
+import { logInfo, logWarn } from "../logger.js";
 import { getPluginToolMeta } from "../plugins/tools.js";
 import { isSubagentSessionKey } from "../routing/session-key.js";
 import { resolveGatewayMessageChannel } from "../utils/message-channel.js";
@@ -54,6 +54,7 @@ import {
   applyOwnerOnlyToolPolicy,
   collectExplicitAllowlist,
   mergeAlsoAllowPolicy,
+  normalizeToolName,
   resolveToolProfilePolicy,
 } from "./tool-policy.js";
 import { resolveWorkspaceRoot } from "./workspace-dir.js";
@@ -522,28 +523,51 @@ export function createOpenClawCodingTools(options?: {
   });
   // Security: treat unknown/undefined as unauthorized (opt-in, not opt-out)
   const senderIsOwner = options?.senderIsOwner === true;
+  logInfo(`senderIsOwner: ${senderIsOwner}`);
+  logInfo(`toolsForModelProvider: ${toolsForModelProvider.map((tool) => tool.name).join(", ")}`);
   const toolsByAuthorization = applyOwnerOnlyToolPolicy(toolsForModelProvider, senderIsOwner);
-  const subagentFiltered = applyToolPolicyPipeline({
-    tools: toolsByAuthorization,
-    toolMeta: (tool) => getPluginToolMeta(tool),
-    warn: logWarn,
-    steps: [
-      ...buildDefaultToolPolicyPipelineSteps({
-        profilePolicy: profilePolicyWithAlsoAllow,
-        profile,
-        providerProfilePolicy: providerProfilePolicyWithAlsoAllow,
-        providerProfile,
-        globalPolicy,
-        globalProviderPolicy,
-        agentPolicy,
-        agentProviderPolicy,
-        groupPolicy,
-        agentId,
-      }),
-      { policy: sandbox?.tools, label: "sandbox tools.allow" },
-      { policy: subagentPolicy, label: "subagent tools.allow" },
-    ],
-  });
+  logInfo(`toolsByAuthorization: ${toolsByAuthorization.map((tool) => tool.name).join(", ")}`);
+  // Shortcut: if agent config specifies an exact tool list via `tools.only`, bypass the pipeline.
+  const agentOnlyTools =
+    agentId && options?.config
+      ? resolveAgentConfig(options.config, agentId)?.tools?.only
+      : undefined;
+  const subagentFiltered =
+    Array.isArray(agentOnlyTools) && agentOnlyTools.length > 0
+      ? (() => {
+          const onlySet = new Set(agentOnlyTools.map(normalizeToolName));
+          return toolsByAuthorization.filter((tool) => onlySet.has(normalizeToolName(tool.name)));
+        })()
+      : applyToolPolicyPipeline({
+          tools: toolsByAuthorization,
+          toolMeta: (tool) => getPluginToolMeta(tool),
+          warn: logWarn,
+          steps: [
+            ...buildDefaultToolPolicyPipelineSteps({
+              profilePolicy: profilePolicyWithAlsoAllow,
+              profile,
+              providerProfilePolicy: providerProfilePolicyWithAlsoAllow,
+              providerProfile,
+              globalPolicy,
+              globalProviderPolicy,
+              agentPolicy,
+              agentProviderPolicy,
+              groupPolicy,
+              agentId,
+            }),
+            { policy: sandbox?.tools, label: "sandbox tools.allow" },
+            { policy: subagentPolicy, label: "subagent tools.allow" },
+          ],
+        });
+  if (subagentPolicy && options?.sessionKey) {
+    const depth = getSubagentDepthFromSessionStore(options.sessionKey, { cfg: options.config });
+    logInfo(
+      `subagent tools: sessionKey=${options.sessionKey} agentId=${agentId ?? "(none)"} profile=${profile ?? "(none)"} depth=${depth} ` +
+        `subagentPolicy.deny=[${(subagentPolicy.deny ?? []).join(", ")}] ` +
+        `before=${toolsByAuthorization.length} after=${subagentFiltered.length} ` +
+        `tools=[${subagentFiltered.map((t) => t.name).join(", ")}]`,
+    );
+  }
   // Always normalize tool JSON Schemas before handing them to pi-agent/pi-ai.
   // Without this, some providers (notably OpenAI) will reject root-level union schemas.
   // Provider-specific cleaning: Gemini needs constraint keywords stripped, but Anthropic expects them.

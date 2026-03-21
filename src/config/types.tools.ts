@@ -289,6 +289,12 @@ export type AgentToolsConfig = {
   /** Additional allowlist entries merged into allow and/or profile allowlist. */
   alsoAllow?: string[];
   deny?: string[];
+  /**
+   * Exact tool list for this agent. If set, bypasses all policy pipeline steps
+   * (profile, allow/deny, subagent restrictions) and uses exactly these tools.
+   * Owner-only runtime checks still apply.
+   */
+  only?: string[];
   /** Optional tool policy overrides keyed by provider id or "provider/model". */
   byProvider?: Record<string, ToolPolicyConfig>;
   /** Per-agent elevated exec gate (can only further restrict global tools.elevated). */
