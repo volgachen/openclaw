@@ -9,6 +9,7 @@
 export const DEFAULT_GATEWAY_HTTP_TOOL_DENY = [
   // Session orchestration — spawning agents remotely is RCE
   "sessions_spawn",
+  "assign_research_task",
   // Cross-session injection — message injection across sessions
   "sessions_send",
   // Persistent automation control plane — can create/update/remove scheduled runs
@@ -28,6 +29,7 @@ export const DANGEROUS_ACP_TOOL_NAMES = [
   "spawn",
   "shell",
   "sessions_spawn",
+  "assign_research_task",
   "sessions_send",
   "gateway",
   "fs_write",

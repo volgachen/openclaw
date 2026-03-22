@@ -277,6 +277,8 @@ export function buildAgentSystemPrompt(params: {
     sessions_spawn: acpSpawnRuntimeEnabled
       ? 'Spawn an isolated sub-agent or ACP coding session (runtime="acp" requires `agentId` unless `acp.defaultAgent` is configured; ACP harness ids follow acp.allowedAgents, not agents_list)'
       : "Spawn an isolated sub-agent session",
+    assign_research_task:
+      "Spawn two subagents (speaker + digester) with the same task string; mode=session, thread=false, need_register=false",
     subagents: "List, steer, or kill sub-agent runs for this requester session",
     session_status:
       "Show a /status-equivalent status card (usage + time + Reasoning/Verbose/Elevated); use for model-use questions (📊 session_status); optional per-session model override",

@@ -20,6 +20,7 @@ import { createSessionStatusTool } from "./tools/session-status-tool.js";
 import { createSessionsHistoryTool } from "./tools/sessions-history-tool.js";
 import { createSessionsListTool } from "./tools/sessions-list-tool.js";
 import { createSessionsSendTool } from "./tools/sessions-send-tool.js";
+import { createAssignResearchTaskTool } from "./tools/assign-research-task-tool.js";
 import { createSessionsSpawnTool } from "./tools/sessions-spawn-tool.js";
 import { createSubagentsTool } from "./tools/subagents-tool.js";
 import { createTtsTool } from "./tools/tts-tool.js";
@@ -176,6 +177,19 @@ export function createOpenClawTools(
       sandboxed: options?.sandboxed,
     }),
     createSessionsSpawnTool({
+      agentSessionKey: options?.agentSessionKey,
+      agentChannel: options?.agentChannel,
+      agentAccountId: options?.agentAccountId,
+      agentTo: options?.agentTo,
+      agentThreadId: options?.agentThreadId,
+      agentGroupId: options?.agentGroupId,
+      agentGroupChannel: options?.agentGroupChannel,
+      agentGroupSpace: options?.agentGroupSpace,
+      sandboxed: options?.sandboxed,
+      requesterAgentIdOverride: options?.requesterAgentIdOverride,
+      workspaceDir,
+    }),
+    createAssignResearchTaskTool({
       agentSessionKey: options?.agentSessionKey,
       agentChannel: options?.agentChannel,
       agentAccountId: options?.agentAccountId,

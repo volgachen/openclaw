@@ -98,6 +98,39 @@ describe("sessions_spawn tool", () => {
     );
   });
 
+  it("rejects childSessionKeyOverride for ACP runtime", async () => {
+    const tool = createSessionsSpawnTool({ agentSessionKey: "agent:main:main" });
+
+    const result = await tool.execute("call-acp-override", {
+      runtime: "acp",
+      task: "t",
+      childSessionKeyOverride: "agent:main:subagent:fixed",
+    });
+
+    expect(result.details).toMatchObject({ status: "error" });
+    const details = result.details as { error?: string };
+    expect(details.error).toContain("childSessionKeyOverride is only supported for runtime=subagent");
+    expect(hoisted.spawnAcpDirectMock).not.toHaveBeenCalled();
+    expect(hoisted.spawnSubagentDirectMock).not.toHaveBeenCalled();
+  });
+
+  it("forwards childSessionKeyOverride to subagent spawn", async () => {
+    const tool = createSessionsSpawnTool({ agentSessionKey: "agent:main:main" });
+
+    await tool.execute("call-sub-override", {
+      task: "t",
+      childSessionKeyOverride: "agent:main:subagent:my-slot",
+    });
+
+    expect(hoisted.spawnSubagentDirectMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        task: "t",
+        childSessionKeyOverride: "agent:main:subagent:my-slot",
+      }),
+      expect.any(Object),
+    );
+  });
+
   it("routes to ACP runtime when runtime=acp", async () => {
     const tool = createSessionsSpawnTool({
       agentSessionKey: "agent:main:main",

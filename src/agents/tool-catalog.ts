@@ -146,6 +146,14 @@ const CORE_TOOL_DEFINITIONS: CoreToolDefinition[] = [
     includeInOpenClawGroup: true,
   },
   {
+    id: "assign_research_task",
+    label: "assign_research_task",
+    description: "Spawn speaker + digester sub-agents for one task",
+    sectionId: "sessions",
+    profiles: ["coding"],
+    includeInOpenClawGroup: true,
+  },
+  {
     id: "subagents",
     label: "subagents",
     description: "Manage sub-agents",

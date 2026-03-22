@@ -38,6 +38,11 @@ const SessionsSpawnToolSchema = Type.Object({
   streamTo: optionalStringEnum(ACP_SPAWN_STREAM_TARGETS),
   /** When false, the run is not registered for auto-announce on completion. Default true. */
   need_register: Type.Optional(Type.Boolean()),
+  /**
+   * Subagent only: use this session store key instead of a random `agent:<id>:subagent:<uuid>`.
+   * Must match the target agent id and start with `subagent:` after the agent segment.
+   */
+  childSessionKeyOverride: Type.Optional(Type.String()),
 
   // Inline attachments (snapshot-by-value).
   // NOTE: Attachment contents are redacted from transcript persistence by sanitizeToolCallInputs.
@@ -121,6 +126,7 @@ export function createSessionsSpawnTool(
             mimeType?: string;
           }>)
         : undefined;
+      const childSessionKeyOverride = readStringParam(params, "childSessionKeyOverride");
 
       if (streamTo && runtime !== "acp") {
         return jsonResult({
@@ -130,6 +136,12 @@ export function createSessionsSpawnTool(
       }
 
       if (runtime === "acp") {
+        if (childSessionKeyOverride) {
+          return jsonResult({
+            status: "error",
+            error: "childSessionKeyOverride is only supported for runtime=subagent",
+          });
+        }
         if (Array.isArray(attachments) && attachments.length > 0) {
           return jsonResult({
             status: "error",
@@ -179,6 +191,7 @@ export function createSessionsSpawnTool(
             params.attachAs && typeof params.attachAs === "object"
               ? readStringParam(params.attachAs as Record<string, unknown>, "mountPath")
               : undefined,
+          childSessionKeyOverride,
         },
         {
           agentSessionKey: opts?.agentSessionKey,

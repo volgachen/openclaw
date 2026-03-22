@@ -27,6 +27,7 @@ import {
   materializeSubagentAttachments,
   type SubagentAttachmentReceiptFile,
 } from "./subagent-attachments.js";
+import { resolveSubagentChildSessionKeyForSpawn } from "./subagent-child-session-key.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
 import { countActiveRunsForSession, registerSubagentRun } from "./subagent-registry.js";
 import { readStringParam } from "./tools/common.js";
@@ -65,6 +66,11 @@ export type SpawnSubagentParams = {
     mimeType?: string;
   }>;
   attachMountPath?: string;
+  /**
+   * Use this session store key for the child instead of `agent:<targetAgentId>:subagent:<random UUID>`.
+   * Must parse as `agent:<agentId>:subagent:...` with `agentId` equal to the spawn target.
+   */
+  childSessionKeyOverride?: string;
 };
 
 export type SpawnSubagentContext = {
@@ -354,7 +360,14 @@ export async function spawnSubagentDirect(
       };
     }
   }
-  const childSessionKey = `agent:${targetAgentId}:subagent:${crypto.randomUUID()}`;
+  const childKeyResolution = resolveSubagentChildSessionKeyForSpawn({
+    targetAgentId,
+    override: params.childSessionKeyOverride,
+  });
+  if (!childKeyResolution.ok) {
+    return { status: "error", error: childKeyResolution.error };
+  }
+  const childSessionKey = childKeyResolution.key;
   const requesterRuntime = resolveSandboxRuntimeStatus({
     cfg,
     sessionKey: requesterInternalKey,
@@ -756,3 +769,5 @@ export async function spawnSubagentDirect(
     attachments: attachmentsReceipt,
   };
 }
+
+export { resolveSubagentChildSessionKeyForSpawn } from "./subagent-child-session-key.js";
