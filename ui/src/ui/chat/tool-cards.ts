@@ -7,6 +7,23 @@ import { extractTextCached } from "./message-extract.ts";
 import { isToolResultMessage } from "./message-normalizer.ts";
 import { formatToolOutputForSidebar, getTruncatedPreview } from "./tool-helpers.ts";
 
+/** Pretty-print tool call arguments for inline UI and sidebar. */
+export function formatToolArgsForDisplay(args: unknown): string | null {
+  if (args === undefined || args === null) {
+    return null;
+  }
+  if (typeof args === "string") {
+    const trimmed = args.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+  try {
+    return JSON.stringify(args, null, 2);
+  } catch {
+    // oxlint-disable typescript/no-base-to-string
+    return String(args);
+  }
+}
+
 export function extractToolCards(message: unknown): ToolCard[] {
   const m = message as Record<string, unknown>;
   const content = normalizeContent(m.content);
@@ -52,6 +69,8 @@ export function renderToolCardSidebar(card: ToolCard, onOpenSidebar?: (content: 
   const display = resolveToolDisplay({ name: card.name, args: card.args });
   const detail = formatToolDetail(display);
   const hasText = Boolean(card.text?.trim());
+  const argsFormatted =
+    card.kind === "call" ? formatToolArgsForDisplay(card.args ?? {}) : null;
 
   const canClick = Boolean(onOpenSidebar);
   const handleClick = canClick
@@ -60,8 +79,11 @@ export function renderToolCardSidebar(card: ToolCard, onOpenSidebar?: (content: 
           onOpenSidebar!(formatToolOutputForSidebar(card.text!));
           return;
         }
-        const info = `## ${display.label}\n\n${
-          detail ? `**Command:** \`${detail}\`\n\n` : ""
+        const paramsSection = argsFormatted
+          ? `**Parameters**\n\n\`\`\`json\n${argsFormatted}\n\`\`\`\n\n`
+          : "";
+        const info = `## ${display.label}\n\n${paramsSection}${
+          detail ? `**Summary:** ${detail}\n\n` : ""
         }*No output — tool completed successfully.*`;
         onOpenSidebar!(info);
       }
@@ -103,6 +125,11 @@ export function renderToolCardSidebar(card: ToolCard, onOpenSidebar?: (content: 
         ${isEmpty && !canClick ? html`<span class="chat-tool-card__status">${icons.check}</span>` : nothing}
       </div>
       ${detail ? html`<div class="chat-tool-card__detail">${detail}</div>` : nothing}
+      ${
+        argsFormatted
+          ? html`<div class="chat-tool-card__args mono" aria-label="Tool parameters">${argsFormatted}</div>`
+          : nothing
+      }
       ${
         isEmpty
           ? html`

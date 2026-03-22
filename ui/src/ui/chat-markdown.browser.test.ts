@@ -13,7 +13,7 @@ describe("chat markdown rendering", () => {
       {
         role: "assistant",
         content: [
-          { type: "toolcall", name: "noop", arguments: {} },
+          { type: "toolcall", name: "noop", arguments: { path: "/tmp/x" } },
           { type: "toolresult", name: "noop", text: "Hello **world**" },
         ],
         timestamp,
@@ -23,6 +23,9 @@ describe("chat markdown rendering", () => {
     await app.updateComplete;
 
     const toolCards = Array.from(app.querySelectorAll<HTMLElement>(".chat-tool-card"));
+    const callArgs = toolCards[0]?.querySelector(".chat-tool-card__args");
+    expect(callArgs?.textContent?.trim()).toContain('"path"');
+    expect(callArgs?.textContent?.trim()).toContain("/tmp/x");
     const toolCard = toolCards.find((card) =>
       card.querySelector(".chat-tool-card__preview, .chat-tool-card__inline"),
     );

@@ -9,9 +9,6 @@
   transition:
     border-color 150ms ease-out,
     background 150ms ease-out;
-  /* Fixed max-height to ensure cards don't expand too much */
-  max-height: 120px;
-  overflow: hidden;
 }
 
 .chat-tool-card:hover {
@@ -120,6 +117,26 @@
   font-size: 12px;
   color: var(--muted);
   margin-top: 4px;
+}
+
+/* Full tool call arguments (JSON or string) */
+.chat-tool-card__args {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text);
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.chat-tool-card--clickable:hover .chat-tool-card__args {
+  border-color: var(--border-strong);
 }
 
 /* Collapsed preview - fixed height with truncation */

@@ -1970,6 +1970,10 @@
   color: var(--muted);
 }
 
+.chat-tool-card__args {
+  font-family: var(--mono);
+}
+
 .chat-tool-card__details {
   margin-top: 6px;
 }
