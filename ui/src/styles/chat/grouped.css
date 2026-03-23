@@ -283,6 +283,17 @@ img.chat-avatar {
   }
 }
 
+/* Message ID label shown at bottom of each bubble */
+.chat-message-id {
+  margin-top: 6px;
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  color: var(--muted);
+  opacity: 0.5;
+  user-select: text;
+  word-break: break-all;
+}
+
 /* Fade-in animation for new messages */
 .chat-bubble.fade-in {
   animation: fade-in 200ms ease-out;

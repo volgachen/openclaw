@@ -521,6 +521,7 @@ const CommonToolPolicyFields = {
 export const AgentToolsSchema = z
   .object({
     ...CommonToolPolicyFields,
+    only: z.array(z.string()).optional(),
     elevated: z
       .object({
         enabled: z.boolean().optional(),

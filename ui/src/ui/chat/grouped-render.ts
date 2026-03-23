@@ -229,6 +229,7 @@ function renderGroupedMessage(
 ) {
   const m = message as Record<string, unknown>;
   const role = typeof m.role === "string" ? m.role : "unknown";
+  const messageId = typeof m.id === "string" ? m.id : null;
   const isToolResult =
     isToolResultMessage(message) ||
     role.toLowerCase() === "toolresult" ||
@@ -283,6 +284,7 @@ function renderGroupedMessage(
           : nothing
       }
       ${toolCards.map((card) => renderToolCardSidebar(card, onOpenSidebar))}
+      ${messageId ? html`<div class="chat-message-id">${messageId}</div>` : nothing}
     </div>
   `;
 }
